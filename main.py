@@ -1,56 +1,23 @@
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import JSONResponse, FileResponse
-from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
-from typing import Optional
+from fastapi import FastAPI
+from fastapi.responses import FileResponse
+from starlette.staticfiles import StaticFiles
+
+from crud import router
 import db
 
-# Ініціалізація бази
-db.init_db()
+def create_app() -> FastAPI:
+    db.init_db()
 
-app = FastAPI()
-app.mount("/static", StaticFiles(directory="static"), name="static")
+    app = FastAPI(title="TodoApp")
 
-# Модель для валідації
-class TodoItem(BaseModel):
-    title: str
-    description: Optional[str] = None
-    done: Optional[bool] = False
+    app.include_router(router, prefix="/api")
 
-# CRUD API
-@app.get("/api/todos")
-def list_todos():
-    return db.get_all_todos()
+    app.mount("/static", StaticFiles(directory="static"), name="static")
 
-@app.get("/api/todos/{todo_id}")
-def get_todo(todo_id: int):
-    todo = db.get_todo(todo_id)
-    if not todo:
-        raise HTTPException(status_code=404, detail="Todo not found")
-    return todo
+    @app.get("/")
+    def frontend():
+        return FileResponse("static/index.html")
 
-@app.post("/api/todos")
-def create_todo(item: TodoItem):
-    if not item.title.strip():
-        raise HTTPException(status_code=400, detail="Title cannot be empty")
-    todo = db.create_todo(item.title, item.description)
-    return todo
+    return app
 
-@app.put("/api/todos/{todo_id}")
-def update_todo(todo_id: int, item: TodoItem):
-    todo = db.update_todo(todo_id, item.title, item.description, item.done)
-    if not todo:
-        raise HTTPException(status_code=404, detail="Todo not found")
-    return todo
-
-@app.delete("/api/todos/{todo_id}")
-def delete_todo(todo_id: int):
-    deleted = db.delete_todo(todo_id)
-    if not deleted:
-        raise HTTPException(status_code=404, detail="Todo not found")
-    return JSONResponse(content={"message": "Todo deleted"})
-
-# Віддаємо фронтенд
-@app.get("/")
-def serve_frontend():
-    return FileResponse("static/index.html")
+app = create_app()
