@@ -7,13 +7,15 @@
 <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-<h1>Todo App</h1>
-<div id="todo-form">
-    <input type="text" id="title" placeholder="Назва">
-    <input type="text" id="description" placeholder="Опис (необов'язково)">
-    <button id="add-btn">Додати</button>
+<h1>To Do App</h1>
+<button id="add-btn">New task</button>
+<div id="new-task-container" style="display: none">
+    <input type="text" id="new-task-input" placeholder="Enter a task">
+    <button id="save-btn">Save 💾</button>
 </div>
-<ul id="todo-list"></ul>
+<ul id="task-list">
+
+</ul>
 <script src="/static/script.js"></script>
 </body>
 </html>
