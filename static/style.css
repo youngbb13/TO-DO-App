@@ -17,3 +17,17 @@ body {
     cursor: pointer;
     font-size: 16px;
 }
+
+#new-task-container {
+    justify-content: center;
+    margin: 20px auto;
+    padding: 10px 20px;
+}
+
+#task-list {
+    display: block;
+    margin: 20px auto;
+    padding: 10px 20px;
+    display: table-column;
+    text-align: left;
+}
