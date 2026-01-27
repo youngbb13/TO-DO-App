@@ -107,4 +107,130 @@ function renderTodo(todo) {
     });
 
     // deleting
+    deleteBtn.onclick = async () => {
+        if (!confirm("Delete task?")) return;
+        try {
+            const res = await fetch(`${API_BASE}/${todo.id}`, {
+                method: "DELETE"
+            });
+            if (res.ok) {
+                li.remove();
+            } else {
+                alert("Failed to delete!");
+            }
+        } catch {
+            alert("Network Error!");
+        }
+    };
+
+    // editing (title + description)
+    editBtn.onclick = () => {
+        if (editBtn.textContent === "Edit") {
+            // switch to edit mode
+            const titleInput = document.createElement("input");
+            titleInput.type = "text";
+            titleInput.value = todo.title;
+            titleInput.className = "edit-input";
+
+            //
+            let descInput = null;
+            if (todo.description || true) { //показуємо поле навіть якщо опису не було
+                descInput = document.createElement("textarea");
+                descInput.value = todo.description || "";
+                descInput.placeholder = "Description (optional)";
+                descInput.className = "edit-desc";
+            }
+
+            //
+            li.replaceChild(titleInput, span);
+            if(descEl) {
+                li.replaceChild(descInput, descEl);
+            } else if (descInput) {
+                li.insertBefore(descInput, btns);
+            }
+
+            editbtn.textContent = "Save";
+            titleInput.focus();
+
+            //
+            const saveChanges = async () => {
+                const newTitle = titleInput.value.trim();
+                const newDesc = descInput ? descInput.value.trim() : undefined;
+
+                if(!newTitle) {
+                    alert("Title must be written!");
+                    return;
+                }
+
+                try {
+                    const res = await fetch(`${API_BASE}/${todo.id}`, {
+                        method: "PUT",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            title: newTitle,
+                            description: newDesc,
+                            done: todo.done //зберігаємо поточний стан
+                        })
+                    });
+
+                    //
+                    if (res.ok) {
+                        span.textContent= newTitle;
+                        li.replaceChild(span, titleInput);
+
+                        if(descInput) {
+                            if (newDesc) {
+                                if (descEl) {
+                                    descEl.textContent = newDesc;
+                                    li.replaceChild(descEl, descInput);
+                                } else {
+                                    descEl = document.createElement("small");
+                                    descEl.className = "task-desc";
+                                    descEl.textContent = newDesc;
+                                    li.insertBefore(descEl, btns);
+                                }
+                            } else if (descEl) {
+                                descEl.remove();
+                                descEl = null;
+                            }
+                        }
+
+                        //
+                        editBtn.textContent = "Edit";
+                        todo.title = newTitle;
+                        todo.description = newDesc || null;
+                    } else {
+                        alert("Failed to save changes!");
+                    }
+                } catch {
+                    alert("Network Error!");
+                }
+            };
+        }
+    };
+}
+
+//
+async function addTask() {
+    const title = newTaskInput.value.trim();
+    if (!title) return;
+
+    try {
+        const res = await fetch(API_BASE, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({title, description: ""}) //description поки порожній
+        });
+
+        //
+        if (!res.ok) throw new Error();
+
+        const newTodo = await res.json();
+        renderTodo(newTodo);
+
+        newTaskInput.value = "";
+        newTaskContainer.style.display = "none";
+    } catch {
+        alert("Failed to add task!");
+    }
 }
