@@ -149,7 +149,7 @@ function renderTodo(todo) {
                 li.insertBefore(descInput, btns);
             }
 
-            editbtn.textContent = "Save";
+            editBtn.textContent = "Save";
             titleInput.focus();
 
             //
