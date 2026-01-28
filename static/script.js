@@ -84,25 +84,44 @@ function renderTodo(todo) {
 
     // switching "done"
     // Цей код відстежує зміну чекбокса, відправляє новий статус завдання на сервер, оновлює вигляд завдання на сторінці, а у разі помилки повертає все назад і показує повідомлення.
-    checkbox.addEventListener("change", async () => { // Слухаємо подію change — вона спрацьовує, коли користувач ставить або знімає галочку
+    checkbox.addEventListener("change", async () => {
+        const wasChecked = checkbox.checked;
+
         try {
-            // Відправляємо PUT-запит на сервер
-            const res = await fetch(`${API_BASE}/${todo.id}`, { // ${API_BASE}/${todo.id} — оновлюємо конкретне завдання
-               method: "PUT",
-               headers: { "Content-Type": "application/json"},
-               body: JSON.stringify({ done: checkbox.checked}) // JSON.stringify перетворює об’єкт у JSON
+            const response = await fetch(`${API_BASE}/${todo.id}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    title: todo.title,                    // обов’язково, бо Pydantic вимагає title
+                    description: todo.description || null,
+                    done: wasChecked
+                })
             });
-            if (!res.ok) throw new Error();
-            if (checkbox.checked) {
+
+            if (!response.ok) {
+                let errorMsg = `Помилка ${response.status}`;
+                try {
+                    const errData = await response.json();
+                    errorMsg += `: ${errData.detail || 'невідома помилка'}`;
+                } catch {}
+                throw new Error(errorMsg);
+            }
+
+            // успішно оновлюємо вигляд
+            if (wasChecked) {
                 span.classList.add("completed");
-                if (descEl) descEl.classList.add("completed"); // Якщо завдання виконане, додаємо клас completed до тексту і опису
+                if (descEl) descEl.classList.add("completed");
             } else {
                 span.classList.remove("completed");
-                if (descEl) descEl.classList.remove("completed"); // Якщо ні, прибираємо цей клас
+                if (descEl) descEl.classList.remove("completed");
             }
-        } catch {
-            checkbox.checked = !checkbox.checked; // відкат, Якщо щось пішло не так, повертаємо чекбокс у попередній стан
-            alert("Failed to change the status!"); // показуємо повідомлення користувачу
+
+            todo.done = wasChecked;
+
+        } catch (err) {
+            console.error("Помилка зміни статусу:", err);
+            checkbox.checked = !wasChecked; // відкат
+            alert("Не вдалося змінити статус\n" + err.message);
         }
     });
 
@@ -132,32 +151,29 @@ function renderTodo(todo) {
             titleInput.value = todo.title;
             titleInput.className = "edit-input";
 
-            //
-            let descInput = null;
-            if (todo.description || true) { //показуємо поле навіть якщо опису не було
-                descInput = document.createElement("textarea");
-                descInput.value = todo.description || "";
-                descInput.placeholder = "Description (optional)";
-                descInput.className = "edit-desc";
-            }
+            // завжди показуємо поле опису при редагуванні
+            const descInput = document.createElement("textarea");
+            descInput.value = todo.description || "";
+            descInput.placeholder = "Description (optional)";
+            descInput.className = "edit-desc";
 
             //
             li.replaceChild(titleInput, span);
-            if(descEl) {
+            if (descEl) {
                 li.replaceChild(descInput, descEl);
-            } else if (descInput) {
+            } else {
                 li.insertBefore(descInput, btns);
             }
 
             editBtn.textContent = "Save";
             titleInput.focus();
 
-            //
+            // функція збереження (визначена перед прив’язкою)
             const saveChanges = async () => {
                 const newTitle = titleInput.value.trim();
-                const newDesc = descInput ? descInput.value.trim() : undefined;
+                const newDesc = descInput.value.trim() || null;
 
-                if(!newTitle) {
+                if (!newTitle) {
                     alert("Title must be written!");
                     return;
                 }
@@ -173,39 +189,46 @@ function renderTodo(todo) {
                         })
                     });
 
-                    //
-                    if (res.ok) {
-                        span.textContent= newTitle;
-                        li.replaceChild(span, titleInput);
-
-                        if(descInput) {
-                            if (newDesc) {
-                                if (descEl) {
-                                    descEl.textContent = newDesc;
-                                    li.replaceChild(descEl, descInput);
-                                } else {
-                                    descEl = document.createElement("small");
-                                    descEl.className = "task-desc";
-                                    descEl.textContent = newDesc;
-                                    li.insertBefore(descEl, btns);
-                                }
-                            } else if (descEl) {
-                                descEl.remove();
-                                descEl = null;
-                            }
-                        }
-
-                        //
-                        editBtn.textContent = "Edit";
-                        todo.title = newTitle;
-                        todo.description = newDesc || null;
-                    } else {
-                        alert("Failed to save changes!");
+                    if (!res.ok) {
+                        let errorMsg = `Помилка ${res.status}`;
+                        try {
+                            const errData = await res.json();
+                            errorMsg += `: ${errData.detail || 'невідома помилка'}`;
+                        } catch {}
+                        throw new Error(errorMsg);
                     }
-                } catch {
-                    alert("Network Error!");
+
+                    span.textContent = newTitle;
+                    li.replaceChild(span, titleInput);
+
+                    if (newDesc) {
+                        if (descEl) {
+                            descEl.textContent = newDesc;
+                            li.replaceChild(descEl, descInput);
+                        } else {
+                            descEl = document.createElement("small");
+                            descEl.className = "task-desc";
+                            descEl.textContent = newDesc;
+                            li.insertBefore(descEl, btns);
+                        }
+                    } else if (descEl) {
+                        descEl.remove();
+                        descEl = null;
+                    }
+
+                    editBtn.textContent = "Edit";
+                    todo.title = newTitle;
+                    todo.description = newDesc;
+
+                } catch (err) {
+                    console.error("Помилка збереження:", err);
+                    alert("Не вдалося зберегти зміни\n" + err.message);
                 }
             };
+
+            // прив’язуємо функцію після її визначення
+            editBtn.onclick = saveChanges;
+
         }
     };
 }
