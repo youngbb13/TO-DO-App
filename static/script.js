@@ -82,14 +82,15 @@ function renderTodo(todo) {
 
     // -----------ОБРОБНИКИ------------
 
-    // switching "done"
-    // Цей код відстежує зміну чекбокса, відправляє новий статус завдання на сервер, оновлює вигляд завдання на сторінці, а у разі помилки повертає все назад і показує повідомлення.
-    checkbox.addEventListener("change", async () => {
-        const wasChecked = checkbox.checked;
+    // Це обробник події зміни чекбокса, який оновлює статус todo-задачі і на бекенді, і в інтерфейсі.
+    checkbox.addEventListener("change", async () => { // Коли користувач клікає чекбокс (ставить/знімає галочку), виконується ця функція
+        const wasChecked = checkbox.checked; // Запам’ятовуємо новий стан чекбокса
+
 
         try {
+            // Відправка запиту на сервер
             const response = await fetch(`${API_BASE}/${todo.id}`, {
-                method: "PUT",
+                method: "PUT", // оновлення існуючого todo
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     title: todo.title,                    // обов’язково, бо Pydantic вимагає title
@@ -98,16 +99,17 @@ function renderTodo(todo) {
                 })
             });
 
+            // Перевірка відповіді сервера
             if (!response.ok) {
                 let errorMsg = `Помилка ${response.status}`;
-                try {
+                try { // Пробуємо витягнути detail з JSON
                     const errData = await response.json();
                     errorMsg += `: ${errData.detail || 'невідома помилка'}`;
-                } catch {}
+                } catch {} // Якщо JSON не прийшов або зламався — просто ігноруємо:
                 throw new Error(errorMsg);
             }
 
-            // успішно оновлюємо вигляд
+            // Якщо все ок — оновлюємо інтерфейс
             if (wasChecked) {
                 span.classList.add("completed");
                 if (descEl) descEl.classList.add("completed");
@@ -116,7 +118,7 @@ function renderTodo(todo) {
                 if (descEl) descEl.classList.remove("completed");
             }
 
-            todo.done = wasChecked;
+            todo.done = wasChecked; // Оновлюємо локальний стан
 
         } catch (err) {
             console.error("Помилка зміни статусу:", err);
@@ -127,7 +129,7 @@ function renderTodo(todo) {
 
     // deleting
     deleteBtn.onclick = async () => {
-        if (!confirm("Delete task?")) return;
+        if (!confirm("Delete task?")) return; // Браузер показує стандартне віконце: OK → продовжуємо,  Cancel → return, і нічого не відбувається
         try {
             const res = await fetch(`${API_BASE}/${todo.id}`, {
                 method: "DELETE"
@@ -145,33 +147,34 @@ function renderTodo(todo) {
     // editing (title + description)
     editBtn.onclick = () => {
         if (editBtn.textContent === "Edit") {
-            // switch to edit mode
+            // switch to edit mode | Створення полів для редагування
             const titleInput = document.createElement("input");
             titleInput.type = "text";
             titleInput.value = todo.title;
             titleInput.className = "edit-input";
 
-            // завжди показуємо поле опису при редагуванні
+            // завжди показуємо поле опису при редагуванні, навіть якщо його не було
             const descInput = document.createElement("textarea");
             descInput.value = todo.description || "";
             descInput.placeholder = "Description (optional)";
             descInput.className = "edit-desc";
 
-            //
-            li.replaceChild(titleInput, span);
+            // Заміна елементів у DOM
+            li.replaceChild(titleInput, span); // <span> з назвою → замінюється на <input>
             if (descEl) {
-                li.replaceChild(descInput, descEl);
+                li.replaceChild(descInput, descEl); // якщо опис був → міняємо його на textarea
             } else {
-                li.insertBefore(descInput, btns);
+                li.insertBefore(descInput, btns); // якщо не було → просто вставляємо перед кнопками
             }
 
             editBtn.textContent = "Save";
             titleInput.focus();
 
             // функція збереження (визначена перед прив’язкою)
+            // Оголошується всередині, щоб мати доступ до: titleInput, descInput, todo, descEl
             const saveChanges = async () => {
-                const newTitle = titleInput.value.trim();
-                const newDesc = descInput.value.trim() || null;
+                const newTitle = titleInput.value.trim(); // .trim() — прибирає пробіли
+                const newDesc = descInput.value.trim() || null; // пустий опис → null (зручно для бекенду)
 
                 if (!newTitle) {
                     alert("Title must be written!");
@@ -198,24 +201,31 @@ function renderTodo(todo) {
                         throw new Error(errorMsg);
                     }
 
+                    // Якщо збереження успішне — оновлюємо UI
+                    // Повертаємо <span> замість <input>
                     span.textContent = newTitle;
                     li.replaceChild(span, titleInput);
 
+                    // Опис (3 сценарії)
+
+                    // Опис є і був
                     if (newDesc) {
                         if (descEl) {
                             descEl.textContent = newDesc;
                             li.replaceChild(descEl, descInput);
                         } else {
+                            // Опис є, але його не було
                             descEl = document.createElement("small");
                             descEl.className = "task-desc";
                             descEl.textContent = newDesc;
                             li.insertBefore(descEl, btns);
                         }
-                    } else if (descEl) {
+                    } else if (descEl) { // Опис видалили
                         descEl.remove();
                         descEl = null;
                     }
 
+                    // Повернення в режим "Edit"
                     editBtn.textContent = "Edit";
                     todo.title = newTitle;
                     todo.description = newDesc;
@@ -226,15 +236,16 @@ function renderTodo(todo) {
                 }
             };
 
-            // прив’язуємо функцію після її визначення
+            // Перепривʼязка кнопки, Кнопка тепер викликає іншу логіку
             editBtn.onclick = saveChanges;
 
         }
     };
 }
 
-//
-async function addTask() {
+// додавання нової задач
+async function addTask() { // бере текст із поля вводу
+    // Зчитування і перевірка назви
     const title = newTaskInput.value.trim();
     if (!title) return;
 
@@ -245,12 +256,14 @@ async function addTask() {
             body: JSON.stringify({title, description: ""}) //description поки порожній
         });
 
-        //
+        // Перевірка відповіді
         if (!res.ok) throw new Error();
 
-        const newTodo = await res.json();
-        renderTodo(newTodo);
 
+        const newTodo = await res.json(); // Отримання створеного todo
+        renderTodo(newTodo); // Додавання в UI
+
+        // Очищення і закриття форми
         newTaskInput.value = "";
         newTaskContainer.style.display = "none";
     } catch {
