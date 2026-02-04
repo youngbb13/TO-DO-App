@@ -259,7 +259,6 @@ async function addTask() { // бере текст із поля вводу
         // Перевірка відповіді
         if (!res.ok) throw new Error();
 
-
         const newTodo = await res.json(); // Отримання створеного todo
         renderTodo(newTodo); // Додавання в UI
 
