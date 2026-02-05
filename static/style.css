@@ -4,11 +4,24 @@ body {
     align-content: center;
     flex-direction: column;
     text-align: center;
-    background-color: gray;
+    background-color: rebeccapurple;
+}
+
+ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+
+h1 {
+    font-family: Arial;
 }
 
 button {
     margin: 3px;
+    border-radius: 10px;
+    padding: 5px;
 }
 
 #add-btn {
@@ -16,11 +29,11 @@ button {
     margin: 20px auto;
     padding: 10px 20px;
     color: black;
-    background-color: lime;
+    background-color: cyan;
     border-color: white;
     border-radius: 50px;
     cursor: pointer;
-    font-size: 16px;
+    font-size: 25px;
     transition: transform 0.3s ease;
 }
 
@@ -32,16 +45,21 @@ button:hover {
     justify-content: center;
     margin: 20px auto;
     padding: 10px 20px;
-    background-color: floralwhite;
+    border-radius: 10px;
+}
+
+#task-list:empty {
+    display: none;
 }
 
 #task-list {
-    margin: 20px auto;
+    margin: 30px auto;
     padding: 10px 20px;
     display: block;
     text-align: left;
     border-radius: 10px;
     background-color: floralwhite;
+
 }
 
 #new-task-input {
@@ -50,14 +68,16 @@ button:hover {
 
 #save-btn {
     margin: 10px;
+    background-color: royalblue;
+    font-size: 1.2rem;
 }
 
 li {
-    background-color: honeydew;
+    background-color: lightgray;
     margin: 10px;
     border-radius: 50px;
     padding: 10px 20px;
-    border: 1px solid cadetblue;
+    border: 1px solid black;
 }
 
 span.task-text {
@@ -65,5 +85,34 @@ span.task-text {
 }
 
 div.task-buttons {
-    place-content: ;
+    display: flex;
+    justify-content: space-between;
+}
+
+#new-task-input {
+    flex: 1;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: none;
+    outline: none;
+    font-size: 1rem;
+}
+
+.edit-btn {
+    background-color: lightblue;
+    color: blue;
+}
+
+.delete-btn {
+    background-color: lightpink;
+    color: red;
+}
+
+.task-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.task-buttons button {
+    flex: 1;
 }
