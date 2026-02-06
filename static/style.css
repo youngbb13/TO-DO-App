@@ -74,14 +74,19 @@ button:hover {
 
 li {
     background-color: lightgray;
-    margin: 10px;
+    margin: 1rem;
     border-radius: 50px;
     padding: 10px 20px;
     border: 1px solid black;
+    display: flex;
+    flex-direction: column;
 }
 
 span.task-text {
     font-size: 20px;
+    width: 20dvw;
+    min-width: 12rem;
+
 }
 
 div.task-buttons {
@@ -115,4 +120,9 @@ div.task-buttons {
 
 .task-buttons button {
     flex: 1;
+}
+
+.edit-input {
+    padding: 0.5rem;
+    font-size: 1.3rem;
 }
